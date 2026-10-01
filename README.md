@@ -4,13 +4,35 @@
 
 Все плагины загружаются автоматически и не могут быть отключены через админку.
 
+## Что в репозитории
+
+| Плагин | Назначение |
+|---|---|
+| `tagdiv-seo-fix` | Корректная микроразметка (Schema.org `NewsArticle`, Open Graph, Twitter Cards). Отключает встроенную схему темы Newspaper. |
+
+Список пополняется. Каждый плагин — отдельная папка со своим `README.md` и `CHANGELOG.md`.
+
 ## Структура репозитория
 
-- `loader.php` — корневой загрузчик. Подключает плагины из подпапок.
-- `<plugin-name>/` — папка отдельного плагина.
-  - `<plugin-name>.php` — основной файл плагина.
-  - `README.md` — описание плагина, его константы и логика.
-  - `CHANGELOG.md` — история изменений (опционально).
+```
+mu-plugins/
+├── .editorconfig              # настройки редактора (табы в PHP, пробелы в JSON/MD)
+├── .gitattributes             # нормализация переносов строк (LF)
+├── .gitignore                 # игнорируем vendor/, кэши, IDE
+├── LICENSE                    # MIT на весь репозиторий
+├── README.md                  # этот файл
+├── composer.json              # dev-зависимости и скрипты
+├── composer.lock              # зафиксированные версии (коммитим)
+├── loader.php                 # загрузчик плагинов из подпапок
+├── phpcs.xml                  # конфиг PHP_CodeSniffer (WordPress-стандарт)
+├── phpstan.neon               # конфиг PHPStan
+├── vendor/                    # dev-зависимости (в .gitignore)
+└── tagdiv-seo-fix/
+    ├── tagdiv-seo-fix.php     # основной файл плагина
+    ├── README.md              # описание плагина
+    ├── CHANGELOG.md           # история изменений
+    └── LICENSE                # MIT (для копирования папки в другой проект)
+```
 
 ## Почему используется loader.php
 
@@ -27,18 +49,18 @@ WordPress **не загружает** `.php`-файлы из подпапок `m
 
 ## Как добавить новый плагин
 
-1. Создайте папку `mu-plugins/my-plugin/`.
-2. Поместите в неё файл `my-plugin.php` с заголовком плагина.
-3. Добавьте путь к файлу в массив `$plugins` внутри `loader.php`:
+1. Создайте папку `tagdiv-seo-fix/` (или `<plugin-name>/`).
+2. Поместите в неё файл `<plugin-name>.php` с заголовком плагина.
+3. Добавьте путь к файлу в массив `$sitename_mu_plugins` внутри `loader.php`:
 
    ```php
-   $plugins = [
-       'existing-plugin/existing-plugin.php',
-       'my-plugin/my-plugin.php',
-   ];
+   $sitename_mu_plugins = array(
+       'tagdiv-seo-fix/tagdiv-seo-fix.php',
+       'another-plugin/another-plugin.php',
+   );
    ```
 
-4. Создайте `README.md` в папке плагина с описанием.
+4. Создайте `README.md` и `CHANGELOG.md` в папке плагина.
 5. Закоммитьте изменения. На сервере достаточно `git pull` — плагин подхватится автоматически.
 
 ## Как обновлять плагины
@@ -55,15 +77,50 @@ WordPress **не загружает** `.php`-файлы из подпапок `m
 
 - Папка плагина: `kebab-case`, совпадает с именем основного файла.
 - Основной файл: `<plugin-name>.php`.
-- Префикс констант: `SITENAME_` или аббревиатура проекта (например, `NW_` для «News Website»).
+- Префикс констант: `SITENAME_` или аббревиатура проекта.
 - Префикс функций и классов: аналогично префиксу констант.
 - Все хуки, фильтры и опции — с тем же префиксом, чтобы не конфликтовать с другими плагинами.
+- Глобальные переменные в `loader.php` — с префиксом `$sitename_`.
 
-## Требования
+## Разработка
+
+### Требования
 
 - WordPress 5.0+.
 - PHP 7.4+ (рекомендуется 8.1+).
+- Composer 2.x.
 - Git на сервере или настроенный CI для деплоя.
+
+### Установка зависимостей
+
+Из-за блокировки `packagist.org` в РФ `composer install` может упасть в таймаут. Используйте зеркало:
+
+```bash
+composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/
+composer install
+```
+
+Зеркало настраивается один раз на машине. В `composer.json` его прописывать не нужно.
+
+### Проверки
+
+```bash
+composer lint         # PHPCS по WordPress-стандарту (прогресс + источники ошибок)
+composer lint:summary # таблица с файлами и числом ошибок
+composer lint:fix     # автоисправление через PHPCBF
+composer analyse      # PHPStan, уровень 5, лимит памяти 1G
+composer check        # lint + analyse подряд
+```
+
+Все три инструмента настраиваются файлами `phpcs.xml`, `phpstan.neon` и `composer.json`.
+
+### Переносы строк
+
+`.gitattributes` заставляет Git хранить все текстовые файлы с Unix-переносами (`\n`), даже если редактор сохраняет с `\r\n`. Это требование WordPress-стандарта и защита от проблем при деплое на Linux-сервер.
+
+`.editorconfig` подсказывает редакторам правильный стиль: табы для `.php`, пробелы для `.md`, `.json`, `.xml`, `.neon`.
+
+Если PHPCS ругается на `End of line character is invalid` — проверьте настройки редактора. В VS Code: правый нижний угол → `CRLF` → переключить на `LF`.
 
 ## Лицензия
 
