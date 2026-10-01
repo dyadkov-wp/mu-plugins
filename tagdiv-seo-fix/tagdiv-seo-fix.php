@@ -4,7 +4,7 @@
  * Description: Корректная микроразметка (Schema.org, Open Graph, Twitter Cards)
  *              для новостного сайта на WordPress с темой Newspaper.
  *              Перехватывает и отключает встроенную схему tagDiv.
- * Version:     0.4.0
+ * Version:      0.5.0
  * Author:      Олег Дядьков
  * License:     MIT
  * License URI: https://opensource.org/licenses/MIT
