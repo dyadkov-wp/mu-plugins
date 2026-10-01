@@ -60,10 +60,35 @@ class Dyseo_SEO {
 		// Приоритет 99 гарантирует, что мы переопределим любое значение по умолчанию.
 		add_filter( 'td_option', array( $this, 'force_disable_td_schema' ), 99, 2 );
 
-		// 2. Выводим нашу чистую разметку.
+		// 2. Добавляем префиксы Open Graph в тег <html>.
+		// Закрывает ошибку валидатора Яндекса про неизвестный префикс article.
+		add_filter( 'language_attributes', array( $this, 'add_og_prefix' ) );
+
+		// 3. Выводим нашу чистую разметку.
 		add_action( 'wp_head', array( $this, 'add_open_graph' ), 1 );
 		add_action( 'wp_head', array( $this, 'add_twitter_cards' ), 2 );
 		add_action( 'wp_head', array( $this, 'add_news_article_jsonld' ), 10 );
+	}
+
+	/**
+	 * Добавляет префиксы Open Graph в тег <html>.
+	 *
+	 * Закрывает ошибку валидатора Яндекса:
+	 * «префикс article неизвестен валидатору, укажите его явно атрибутом prefix».
+	 *
+	 * Если тема уже добавила атрибут prefix — не дублируем.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @param string $output Текущие атрибуты тега <html>.
+	 * @return string Атрибуты с добавленными префиксами.
+	 */
+	public function add_og_prefix( $output ) {
+		if ( false !== strpos( $output, 'prefix=' ) ) {
+			return $output;
+		}
+
+		return $output . ' prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article#"';
 	}
 
 	/**
