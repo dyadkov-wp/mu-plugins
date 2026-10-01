@@ -31,13 +31,13 @@ define( 'SITENAME_ENABLE_CUSTOM_SEO', true );
 
 ## Что делает плагин
 
-1. **Отключает schema темы tagDiv.** Через фильтр `td_option` принудительно выставляет опцию `tds_disable_article_schema` в `'1'`. Это заставляет тему думать, что соответствующая галочка в настройках включена, и она не выводит свою разметку.
+1. **Отключает schema темы tagDiv.** Через фильтр `td_option` выставляет опцию `tds_disable_article_schema` в `'1'`, но **только если плагин действительно выводит свою разметку для текущей страницы**. На остальных страницах schema темы продолжает работать — так сайт не остаётся без разметки ни на одной записи.
 
 2. **Выводит Open Graph.** Теги `og:type`, `og:title`, `og:description`, `og:url`, `og:site_name`, `og:locale`, `og:image` (с размерами и `alt`), `article:published_time`, `article:modified_time`, `article:section`, `article:author`.
 
 3. **Выводит Twitter Cards.** `twitter:card` = `summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`.
 
-4. **Выводит JSON-LD `NewsArticle`.** Содержит `mainEntityOfPage`, `headline`, `description`, `datePublished`, `dateModified`, `author` (объект `Person` с `name` и `url`), `publisher` (объект `Organization` с `logo`), `image` (объект `ImageObject` с размерами, если они известны).
+4. **Выводит JSON-LD `NewsArticle`.** Содержит `mainEntityOfPage`, `headline`, `description`, `datePublished`, `dateModified`, `author` (объект `Person` с `name` и `url`), `publisher` (объект `Organization` с `logo`, опционально `address` и `telephone`), `image` (объект `ImageObject` с размерами, если они известны).
 
 ## Управление
 
@@ -57,23 +57,31 @@ define( 'SITENAME_SEO_TEST_POST_ID', 12345 );
 
 Чтобы вернуть боевой режим — уберите строку из `wp-config.php` или установите `0`.
 
-### Заменить логотип издателя
+### Данные издателя (адрес, телефон, логотип)
 
-В классе заданы приватные свойства:
+Все данные издателя для Яндекс.Справочника и Google передаются через константы в `wp-config.php`. В коде плагина нет значений по умолчанию — это защита от случайной отправки заглушек на боевой сайт.
+
+**Боевой сайт:**
 
 ```php
-private $publisher_logo_url = 'https://example.com/wp-content/uploads/publisher-logo.png';
-private $publisher_logo_width = 512;
-private $publisher_logo_height = 512;
+define( 'SITENAME_PUBLISHER_ADDRESS', '0000000, г. Родной, ул. Собственная, д. 1' );
+define( 'SITENAME_PUBLISHER_PHONE', '+7 (111) 222-22-22' );
+define( 'SITENAME_PUBLISHER_LOGO_URL', 'https://example.com/wp-content/uploads/publisher-logo.png' );
+define( 'SITENAME_PUBLISHER_LOGO_WIDTH', 512 );
+define( 'SITENAME_PUBLISHER_LOGO_HEIGHT', 512 );
 ```
 
-Размеры должны соответствовать реальному файлу. Требования:
+**Локальная копия:** можно не задавать — логотип подхватится из иконки сайта (`site_icon`), адрес и телефон не будут выведены.
 
-- **Формат:** PNG. Google с 2026 года принимает и SVG, но Яндекс-валидатор относится к SVG настороженно, поэтому для `publisher.logo` используйте растровый формат.
-- **Размер:** квадратный, минимум 512×512.
-- **Без прозрачности, теней и скруглений.** Фон — однотонный (белый или цвет сайта).
+**Защита от плейсхолдеров:**
 
-**Важно:** в JSON-LD поле называется `contentUrl`, а не `url`. Это требование валидатора Яндекса — с `url` внутри `ImageObject` он выдаёт ошибку `В свойстве content тега meta не может содержаться ссылка`. В Open Graph и Twitter Cards по-прежнему используется `og:image` и `twitter:image` — там URL передаётся строкой.
+Значения, содержащие `example`, `test`, `placeholder`, `sample`, `xxx`, `заглушка`, `плейсхолдер`, автоматически отбрасываются. При `WP_DEBUG` в лог пишется предупреждение. Это защищает от ситуации, когда константу задали на локальной копии и забыли поменять на проде.
+
+**Приоритеты логотипа:**
+
+1. Если `SITENAME_PUBLISHER_LOGO_URL` задана и не содержит плейсхолдеров — используется она и размеры из `WIDTH`/`HEIGHT` (по умолчанию 512×512).
+2. Иначе — иконка сайта из настроек WordPress (`site_icon`), с её реальными размерами.
+3. Иначе — `publisher.logo` в JSON-LD не выводится, `og:image` использует только миниатюру/изображение из контента.
 
 ## Зависимости
 
@@ -102,13 +110,17 @@ private $publisher_logo_height = 512;
 
 1. Миниатюра записи (`get_post_thumbnail_id`, размер `large`) — с реальными размерами.
 2. Первое `<img>` из контента записи — **без указания размеров**, чтобы не выдавать недостоверные данные.
-3. Логотип издателя — как fallback.
+3. Логотип издателя: сначала константа `SITENAME_PUBLISHER_LOGO_URL`, затем иконка сайта (`site_icon`).
+4. Если ничего не найдено — тег `og:image` не выводится, `twitter:image` тоже.
+
+В JSON-LD порядок тот же, но если изображение не найдено — блок `image` отсутствует. Это не ошибка валидатора: Google и Яндекс допускают `NewsArticle` без `image`, но с ним сниппет выглядит лучше.
 
 ### Безопасность
 
 - Прямой доступ к файлу блокируется проверкой `ABSPATH`.
 - Все значения экранируются через `esc_attr` при выводе `<meta>`.
 - JSON-LD формируется через `wp_json_encode` с флагами `JSON_UNESCAPED_UNICODE` и `JSON_UNESCAPED_SLASHES`. Повторное экранирование не применяется — `wp_json_encode` уже обеспечивает безопасность внутри `<script>`.
+- Константы издателя читаются через `get_safe_constant()`, которая отсеивает плейсхолдеры и пустые значения.
 
 ## Отладка
 
@@ -145,6 +157,7 @@ private $publisher_logo_height = 512;
 2. Даты в ISO 8601 с таймзоной (проверить через Rich Results Test).
 3. Отсутствие дублирующей разметки от темы (в исходном коде — один блок `application/ld+json`).
 4. Валидность JSON-LD через официальные валидаторы Google и Яндекса.
+5. Все константы `SITENAME_PUBLISHER_*` заданы с реальными значениями, без плейсхолдеров. Проверить через `debug.log` после первого рендера записи — если там появились предупреждения «содержит плейсхолдер и пропущена», значит какая-то константа осталась заглушкой.
 
 ## Проверка дат и разметки через WP-CLI
 
@@ -164,7 +177,7 @@ foreach ($posts as $p) {
 '
 ```
 
-**Ожидаемый формат:** `2026-10-01T13:36:59+05:00` — дата, время, смещение от UTC. Если в выводе нет `+XX:XX` или вместо `T` стоит пробел — это повод разобраться с настройками даты в WordPress, прежде чем включать плагин.
+**Ожидаемый формат:** `2026-10-01T13:36:59+03:00` — дата, время, смещение от UTC. Если в выводе нет `+XX:XX` или вместо `T` стоит пробел — это повод разобраться с настройками даты в WordPress, прежде чем включать плагин.
 
 **Проверка таймзоны сайта:**
 
@@ -177,7 +190,7 @@ wp option get gmt_offset
 
 ```bash
 wp eval '
-$id = 167438; // замените на реальный ID
+$id = 12345; // замените на реальный ID
 $p = get_post($id);
 if (!$p) { echo "Запись не найдена\n"; exit; }
 printf("Title:     %s\n", get_the_title($p));
@@ -197,9 +210,12 @@ printf("Thumb:     %s\n", get_post_thumbnail_id($p) ?: "нет");
 - Обезличены имена классов, констант и URL.
 - Константа `SITENAME_SEO_TEST_POST_ID` всегда определена, по умолчанию `0`.
 - Введён метод `get_test_post_id()` для обхода ложного срабатывания PHPStan.
-- Логотип издателя приведён к PNG 512×512.
 - В JSON-LD `ImageObject` использует `contentUrl` вместо `url` — снимает ошибку валидатора Яндекса.
 - Добавлены docblock для класса, свойств, методов — проходит WordPress-Coding-Standards.
+- **Исправлено:** фильтр `td_option` проверяет `should_output()` — schema темы отключается только там, где плагин выводит свою разметку.
+- **Добавлено:** опциональные константы `SITENAME_PUBLISHER_ADDRESS`, `SITENAME_PUBLISHER_PHONE`, `SITENAME_PUBLISHER_LOGO_URL`, `SITENAME_PUBLISHER_LOGO_WIDTH`, `SITENAME_PUBLISHER_LOGO_HEIGHT`.
+- **Добавлено:** метод `get_safe_constant()` с защитой от утечки плейсхолдеров в боевую разметку.
+- **Добавлено:** fallback логотипа на иконку сайта (`site_icon`).
 - Лицензия MIT.
 
 **Не проверялось:** вывод на реальном сайте, валидация в Rich Results Test, поведение с темой Newspaper в боевом режиме.
