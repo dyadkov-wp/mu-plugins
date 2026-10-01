@@ -92,7 +92,8 @@ class Sitename_SEO {
 
 	/**
 	 * Перехватчик опций tagDiv.
-	 * Заставляет тему думать, что галочка "DISABLE ARTICLE SCHEMA" включена.
+	 * Заставляет тему думать, что галочка "DISABLE ARTICLE SCHEMA" включена,
+	 * НО только если наш плагин действительно выводит свою schema для текущей страницы.
 	 *
 	 * @since 0.4.0
 	 *
@@ -101,11 +102,16 @@ class Sitename_SEO {
 	 * @return mixed
 	 */
 	public function force_disable_td_schema( $value, $option_id ) {
-		if ( 'tds_disable_article_schema' === $option_id ) {
-			// Любое непустое значение отключает генерацию schema темой.
-			return '1';
+		if ( 'tds_disable_article_schema' !== $option_id ) {
+			return $value;
 		}
-		return $value;
+
+		// Не отключаем schema темы, если наша разметка не будет выведена.
+		if ( ! $this->should_output() ) {
+			return $value;
+		}
+
+		return '1';
 	}
 
 	// =========================================================================
