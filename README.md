@@ -54,10 +54,10 @@ WordPress **не загружает** `.php`-файлы из подпапок `m
 3. Добавьте путь к файлу в массив `$sitename_mu_plugins` внутри `loader.php`:
 
    ```php
-   $sitename_mu_plugins = array(
-       'tagdiv-seo-fix/tagdiv-seo-fix.php',
-       'another-plugin/another-plugin.php',
-   );
+    $dyseo_mu_plugins = array(
+        'tagdiv-seo-fix/tagdiv-seo-fix.php',
+        'another-plugin/another-plugin.php',
+    );
    ```
 
 4. Создайте `README.md` и `CHANGELOG.md` в папке плагина.
@@ -77,10 +77,10 @@ WordPress **не загружает** `.php`-файлы из подпапок `m
 
 - Папка плагина: `kebab-case`, совпадает с именем основного файла.
 - Основной файл: `<plugin-name>.php`.
-- Префикс констант: `SITENAME_` или аббревиатура проекта.
+- Префикс констант: `DYSEO_`.
 - Префикс функций и классов: аналогично префиксу констант.
 - Все хуки, фильтры и опции — с тем же префиксом, чтобы не конфликтовать с другими плагинами.
-- Глобальные переменные в `loader.php` — с префиксом `$sitename_`.
+- Глобальные переменные в `loader.php` — с префиксом `$dyseo_`.
 
 ## Разработка
 

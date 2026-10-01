@@ -9,7 +9,7 @@
  * License:     MIT
  * License URI: https://opensource.org/licenses/MIT
  *
- * @package Sitename\SEO
+ * @package Dyseo\SEO
  * @since   0.4.0
  */
 
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // =============================================================================
 // АВАРИЙНЫЙ ВЫКЛЮЧАТЕЛЬ
 // =============================================================================
-if ( ! defined( 'SITENAME_ENABLE_CUSTOM_SEO' ) || ! SITENAME_ENABLE_CUSTOM_SEO ) {
+if ( ! defined( 'DYSEO_ENABLE_CUSTOM_SEO' ) || ! DYSEO_ENABLE_CUSTOM_SEO ) {
 	return;
 }
 
@@ -34,12 +34,12 @@ if ( ! defined( 'SITENAME_ENABLE_CUSTOM_SEO' ) || ! SITENAME_ENABLE_CUSTOM_SEO )
  *   >0 — разметка выводится только для записи с этим ID (режим отладки).
  *
  * Переопределяется в wp-config.php:
- *   define( 'SITENAME_SEO_TEST_POST_ID', 12345 );
+ *   define( 'DYSEO_SEO_TEST_POST_ID', 12345 );
  *
  * @since 0.4.0
  */
-if ( ! defined( 'SITENAME_SEO_TEST_POST_ID' ) ) {
-	define( 'SITENAME_SEO_TEST_POST_ID', 0 );
+if ( ! defined( 'DYSEO_SEO_TEST_POST_ID' ) ) {
+	define( 'DYSEO_SEO_TEST_POST_ID', 0 );
 }
 
 /**
@@ -48,7 +48,7 @@ if ( ! defined( 'SITENAME_SEO_TEST_POST_ID' ) ) {
  *
  * @since 0.4.0
  */
-class Sitename_SEO {
+class Dyseo_SEO {
 
 	/**
 	 * Регистрирует хуки WordPress.
@@ -98,7 +98,7 @@ class Sitename_SEO {
 	 * Возвращает ID тестовой записи.
 	 *
 	 * Вынесено в отдельный метод, чтобы PHPStan не «сворачивал» значение
-	 * константы SITENAME_SEO_TEST_POST_ID в 0 и не считал проверку > 0
+	 * константы DYSEO_SEO_TEST_POST_ID в 0 и не считал проверку > 0
 	 * мёртвым кодом. constant() читает значение во время выполнения,
 	 * поэтому анализатор не может предсказать результат.
 	 *
@@ -107,7 +107,7 @@ class Sitename_SEO {
 	 * @return int
 	 */
 	private function get_test_post_id() {
-		return (int) constant( 'SITENAME_SEO_TEST_POST_ID' );
+		return (int) constant( 'DYSEO_SEO_TEST_POST_ID' );
 	}
 
 	/**
@@ -115,7 +115,7 @@ class Sitename_SEO {
 	 *
 	 * Учитывает:
 	 *   - тип записи (только 'post');
-	 *   - константу SITENAME_SEO_TEST_POST_ID (0 = все записи, >0 = одна).
+	 *   - константу DYSEO_SEO_TEST_POST_ID (0 = все записи, >0 = одна).
 	 *
 	 * @since 0.4.0
 	 *
@@ -268,6 +268,7 @@ class Sitename_SEO {
 		if ( ! empty( $image ) ) {
 			$schema['image'] = array(
 				'@type'      => 'ImageObject',
+				'url'        => $image['url'],
 				'contentUrl' => $image['url'],
 			);
 			if ( ! empty( $image['width'] ) && ! empty( $image['height'] ) ) {
@@ -329,7 +330,7 @@ class Sitename_SEO {
 					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Логируется только при WP_DEBUG, для отладки конфигурации.
 					error_log(
 						sprintf(
-							'Sitename SEO: константа %s содержит плейсхолдер и пропущена.',
+							'Dyseo SEO: константа %s содержит плейсхолдер и пропущена.',
 							$name
 						)
 					);
@@ -345,8 +346,8 @@ class Sitename_SEO {
 	 * Возвращает данные логотипа издателя.
 	 *
 	 * Источники (по приоритету):
-	 *   1. Константа SITENAME_PUBLISHER_LOGO_URL + размеры из констант
-	 *      SITENAME_PUBLISHER_LOGO_WIDTH / HEIGHT (по умолчанию 512×512).
+	 *   1. Константа DYSEO_PUBLISHER_LOGO_URL + размеры из констант
+	 *      DYSEO_PUBLISHER_LOGO_WIDTH / HEIGHT (по умолчанию 512×512).
 	 *   2. Иконка сайта из настроек WordPress (site_icon).
 	 *   3. Пустой массив — логотип не выводится.
 	 *
@@ -355,13 +356,13 @@ class Sitename_SEO {
 	 * @return array{url:string,width:int,height:int}|array{}
 	 */
 	private function get_publisher_logo() {
-		$url = $this->get_safe_constant( 'SITENAME_PUBLISHER_LOGO_URL' );
+		$url = $this->get_safe_constant( 'DYSEO_PUBLISHER_LOGO_URL' );
 
 		if ( '' !== $url ) {
 			return array(
 				'url'    => $url,
-				'width'  => (int) $this->get_safe_constant( 'SITENAME_PUBLISHER_LOGO_WIDTH', '512' ),
-				'height' => (int) $this->get_safe_constant( 'SITENAME_PUBLISHER_LOGO_HEIGHT', '512' ),
+				'width'  => (int) $this->get_safe_constant( 'DYSEO_PUBLISHER_LOGO_WIDTH', '512' ),
+				'height' => (int) $this->get_safe_constant( 'DYSEO_PUBLISHER_LOGO_HEIGHT', '512' ),
 			);
 		}
 
@@ -388,11 +389,11 @@ class Sitename_SEO {
 	 * константы заданы в wp-config.php и не содержат плейсхолдеров.
 	 *
 	 * Константы:
-	 *   - SITENAME_PUBLISHER_ADDRESS     — полный адрес организации.
-	 *   - SITENAME_PUBLISHER_PHONE       — телефон в формате +7 (XXX) XXX-XX-XX.
-	 *   - SITENAME_PUBLISHER_LOGO_URL    — URL логотипа.
-	 *   - SITENAME_PUBLISHER_LOGO_WIDTH  — ширина логотипа в пикселях.
-	 *   - SITENAME_PUBLISHER_LOGO_HEIGHT — высота логотипа в пикселях.
+	 *   - DYSEO_PUBLISHER_ADDRESS     — полный адрес организации.
+	 *   - DYSEO_PUBLISHER_PHONE       — телефон в формате +7 (XXX) XXX-XX-XX.
+	 *   - DYSEO_PUBLISHER_LOGO_URL    — URL логотипа.
+	 *   - DYSEO_PUBLISHER_LOGO_WIDTH  — ширина логотипа в пикселях.
+	 *   - DYSEO_PUBLISHER_LOGO_HEIGHT — высота логотипа в пикселях.
 	 *
 	 * @since 0.4.0
 	 *
@@ -409,13 +410,14 @@ class Sitename_SEO {
 		if ( ! empty( $logo ) ) {
 			$publisher['logo'] = array(
 				'@type'      => 'ImageObject',
+				'url'        => $logo['url'],
 				'contentUrl' => $logo['url'],
 				'width'      => $logo['width'],
 				'height'     => $logo['height'],
 			);
 		}
 
-		$address = $this->get_safe_constant( 'SITENAME_PUBLISHER_ADDRESS' );
+		$address = $this->get_safe_constant( 'DYSEO_PUBLISHER_ADDRESS' );
 		if ( '' !== $address ) {
 			$publisher['address'] = array(
 				'@type'         => 'PostalAddress',
@@ -423,7 +425,7 @@ class Sitename_SEO {
 			);
 		}
 
-		$phone = $this->get_safe_constant( 'SITENAME_PUBLISHER_PHONE' );
+		$phone = $this->get_safe_constant( 'DYSEO_PUBLISHER_PHONE' );
 		if ( '' !== $phone ) {
 			$publisher['telephone'] = $phone;
 		}
@@ -589,4 +591,4 @@ class Sitename_SEO {
 	}
 }
 
-new Sitename_SEO();
+new Dyseo_SEO();

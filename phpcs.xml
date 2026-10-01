@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<ruleset name="Sitename MU Plugins">
+<ruleset name="Dyseo MU Plugins">
     <description>Стандарты кодирования для mu-plugins новостного сайта на WordPress.</description>
 
-    <!-- Что проверяем -->
-    <file>.</file>
+    <!-- Что проверяем: корневой загрузчик и папки mu-plugins. -->
+    <file><div class=""></div></file>
 
     <!-- Исключаем vendor и node_modules из проверки. -->
     <exclude-pattern>*/vendor/*</exclude-pattern>
@@ -43,8 +43,8 @@
     <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
         <properties>
             <property name="prefixes" type="array">
-                <element value="sitename"/>
-                <element value="SITENAME"/>
+                <element value="dyseo"/>
+                <element value="DYSEO"/>
             </property>
         </properties>
     </rule>

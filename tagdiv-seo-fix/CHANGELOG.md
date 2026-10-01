@@ -1,3 +1,5 @@
+# Changelog
+
 Все значимые изменения фиксируются в этом файле.
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 версионирование — [SemVer](https://semver.org/lang/ru/).
@@ -5,15 +7,37 @@
 ## [Unreleased]
 
 ### Added
-- Константа `SITENAME_PUBLISHER_LOGO_URL` и размеры `WIDTH`/`HEIGHT` для логотипа издателя.
-- Константы `SITENAME_PUBLISHER_ADDRESS` и `SITENAME_PUBLISHER_PHONE` для Яндекс.Справочника.
-- Метод `get_safe_constant()` с защитой от утечки плейсхолдеров в боевую разметку.
-- Fallback логотипа на иконку сайта (`site_icon`) из настроек WordPress.
+- Ничего.
 
 ### Changed
-- Удалены свойства класса `$publisher_logo_url`, `$publisher_logo_width`, `$publisher_logo_height`.
-- `publisher` в JSON-LD собирается методом `get_publisher_schema()`.
-- `get_og_image()` использует `get_publisher_logo()` вместо свойств класса.
+- Ничего.
 
 ### Fixed
-- Фильтр `td_option` теперь проверяет `should_output()` перед отключением schema темы.
+- Ничего.
+
+## [0.4.0] — черновик
+
+### Added
+- Константа `DYSEO_SEO_TEST_POST_ID` со значением по умолчанию `0`.
+- Приватный метод `get_test_post_id()` для обхода ложного срабатывания PHPStan.
+- Опциональные константы `DYSEO_PUBLISHER_ADDRESS`, `DYSEO_PUBLISHER_PHONE`, `DYSEO_PUBLISHER_LOGO_URL`, `DYSEO_PUBLISHER_LOGO_WIDTH`, `DYSEO_PUBLISHER_LOGO_HEIGHT`.
+- Метод `get_safe_constant()` с защитой от утечки плейсхолдеров в боевую разметку.
+- Метод `get_publisher_logo()` с fallback на иконку сайта (`site_icon`).
+- Метод `get_publisher_schema()` — сборка схемы `Organization`.
+- Файл `LICENSE` (MIT).
+
+### Changed
+- Класс `Sitename_SEO` переименован в `Dyseo_SEO`.
+- Константы `SITENAME_*` переименованы в `DYSEO_*`.
+- Префикс глобальных переменных в `loader.php` — `$dyseo_`.
+- В `ImageObject` (JSON-LD) добавлены оба ключа — `url` и `contentUrl` — с одинаковым значением. Закрывает требования Google (ожидает `url`) и Яндекса (ожидает `contentUrl`).
+- Логотип издателя и изображение новости читаются через `get_publisher_logo()` / `get_og_image()`, а не из свойств класса.
+- Реальные URL и имена заменены на обезличенные.
+
+### Fixed
+- Фильтр `td_option` теперь проверяет `should_output()` перед отключением schema темы. Раньше при включённом тестовом режиме schema отключалась на всех записях, а своя выводилась только на одной — остальные оставались без разметки.
+
+### Known issues
+- Не тестировалось на боевом сайте.
+- Не проверялось в Rich Results Test (Google) и валидаторе Яндекса.
+- Поведение с темой Newspaper проверено только по коду, не на живой установке.

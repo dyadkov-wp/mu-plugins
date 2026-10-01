@@ -19,7 +19,7 @@
 Плагин активен только если в `wp-config.php` задана константа:
 
 ```php
-define( 'SITENAME_ENABLE_CUSTOM_SEO', true );
+define( 'DYSEO_ENABLE_CUSTOM_SEO', true );
 ```
 
 Без этой константы (или при значении `false`) плагин немедленно завершает работу через `return` и не вмешивается в вывод темы.
@@ -43,16 +43,16 @@ define( 'SITENAME_ENABLE_CUSTOM_SEO', true );
 
 ### Отключить полностью
 
-Уберите константу `SITENAME_ENABLE_CUSTOM_SEO` из `wp-config.php` или установите `false`.
+Уберите константу `DYSEO_ENABLE_CUSTOM_SEO` из `wp-config.php` или установите `false`.
 
 ### Ограничить одной записью (для теста)
 
-В коде предусмотрена константа `SITENAME_SEO_TEST_POST_ID`. По умолчанию она равна `0`, что означает «разметка выводится для всех записей». Любое значение больше нуля ограничивает вывод одной записью с этим ID.
+В коде предусмотрена константа `DYSEO_SEO_TEST_POST_ID`. По умолчанию она равна `0`, что означает «разметка выводится для всех записей». Любое значение больше нуля ограничивает вывод одной записью с этим ID.
 
 Пример для `wp-config.php` на тестовом окружении:
 
 ```php
-define( 'SITENAME_SEO_TEST_POST_ID', 12345 );
+define( 'DYSEO_SEO_TEST_POST_ID', 12345 );
 ```
 
 Чтобы вернуть боевой режим — уберите строку из `wp-config.php` или установите `0`.
@@ -64,11 +64,11 @@ define( 'SITENAME_SEO_TEST_POST_ID', 12345 );
 **Боевой сайт:**
 
 ```php
-define( 'SITENAME_PUBLISHER_ADDRESS', '0000000, г. Родной, ул. Собственная, д. 1' );
-define( 'SITENAME_PUBLISHER_PHONE', '+7 (111) 222-22-22' );
-define( 'SITENAME_PUBLISHER_LOGO_URL', 'https://example.com/wp-content/uploads/publisher-logo.png' );
-define( 'SITENAME_PUBLISHER_LOGO_WIDTH', 512 );
-define( 'SITENAME_PUBLISHER_LOGO_HEIGHT', 512 );
+define( 'DYSEO_PUBLISHER_ADDRESS', '0000000, г. Родной, ул. Собственная, д. 1' );
+define( 'DYSEO_PUBLISHER_PHONE', '+7 (111) 222-22-22' );
+define( 'DYSEO_PUBLISHER_LOGO_URL', 'https://example.com/wp-content/uploads/publisher-logo.png' );
+define( 'DYSEO_PUBLISHER_LOGO_WIDTH', 512 );
+define( 'DYSEO_PUBLISHER_LOGO_HEIGHT', 512 );
 ```
 
 **Локальная копия:** можно не задавать — логотип подхватится из иконки сайта (`site_icon`), адрес и телефон не будут выведены.
@@ -79,7 +79,7 @@ define( 'SITENAME_PUBLISHER_LOGO_HEIGHT', 512 );
 
 **Приоритеты логотипа:**
 
-1. Если `SITENAME_PUBLISHER_LOGO_URL` задана и не содержит плейсхолдеров — используется она и размеры из `WIDTH`/`HEIGHT` (по умолчанию 512×512).
+1. Если `DYSEO_PUBLISHER_LOGO_URL` задана и не содержит плейсхолдеров — используется она и размеры из `WIDTH`/`HEIGHT` (по умолчанию 512×512).
 2. Иначе — иконка сайта из настроек WordPress (`site_icon`), с её реальными размерами.
 3. Иначе — `publisher.logo` в JSON-LD не выводится, `og:image` использует только миниатюру/изображение из контента.
 
@@ -110,7 +110,7 @@ define( 'SITENAME_PUBLISHER_LOGO_HEIGHT', 512 );
 
 1. Миниатюра записи (`get_post_thumbnail_id`, размер `large`) — с реальными размерами.
 2. Первое `<img>` из контента записи — **без указания размеров**, чтобы не выдавать недостоверные данные.
-3. Логотип издателя: сначала константа `SITENAME_PUBLISHER_LOGO_URL`, затем иконка сайта (`site_icon`).
+3. Логотип издателя: сначала константа `DYSEO_PUBLISHER_LOGO_URL`, затем иконка сайта (`site_icon`).
 4. Если ничего не найдено — тег `og:image` не выводится, `twitter:image` тоже.
 
 В JSON-LD порядок тот же, но если изображение не найдено — блок `image` отсутствует. Это не ошибка валидатора: Google и Яндекс допускают `NewsArticle` без `image`, но с ним сниппет выглядит лучше.
@@ -145,10 +145,22 @@ define( 'SITENAME_PUBLISHER_LOGO_HEIGHT', 512 );
 
 Проверка: `Ctrl+U` → поиск `application/ld+json` → должен быть **один** блок. Если два — тема не отдаёт опцию через фильтр, и нужно искать другой способ отключения её схемы (например, через настройки темы в админке).
 
+## Совместимость с Google и Яндексом
+
+**ImageObject использует и `url`, и `contentUrl`.** Оба ключа указываются с одинаковым значением.
+
+Почему так:
+
+- **Google** в Rich Results Test ожидает `url` в `ImageObject`.
+- **Яндекс** в валидаторе структурированных данных ожидает `contentUrl` и не принимает `url` — выдаёт ошибку «В свойстве content тега meta не может содержаться ссылка».
+- Оба свойства валидны по спецификации Schema.org (`url` — из `Thing`, `contentUrl` — из `MediaObject`). Передача обоих ключей закрывает требования обоих поисковиков.
+
+Это применяется и к `publisher.logo`, и к `image` новости.
+
 ## Соответствие требованиям 2026 года
 
 - **Google:** структура `NewsArticle` содержит все рекомендованные поля. Формат логотипа издателя — PNG, минимум 512×512, без прозрачности.
-- **Яндекс:** поддерживает JSON-LD `NewsArticle`. В Open Graph поле `article:author` передаётся **строкой** с именем автора — это требование Яндекс.Метрики, не менять на URL. В `ImageObject` используется `contentUrl`, а не `url`.
+- **Яндекс:** поддерживает JSON-LD `NewsArticle`. В Open Graph поле `article:author` передаётся **строкой** с именем автора — это требование Яндекс.Метрики, не менять на URL. В `ImageObject` используется `contentUrl` (а также дублируется `url` для совместимости с Google).
 - **AI-поиск:** JSON-LD с `author.url`, ведущим на страницу автора, и `publisher.logo` с корректными размерами улучшает цитируемость.
 
 ## Что стоит проверить перед продакшеном
@@ -157,7 +169,7 @@ define( 'SITENAME_PUBLISHER_LOGO_HEIGHT', 512 );
 2. Даты в ISO 8601 с таймзоной (проверить через Rich Results Test).
 3. Отсутствие дублирующей разметки от темы (в исходном коде — один блок `application/ld+json`).
 4. Валидность JSON-LD через официальные валидаторы Google и Яндекса.
-5. Все константы `SITENAME_PUBLISHER_*` заданы с реальными значениями, без плейсхолдеров. Проверить через `debug.log` после первого рендера записи — если там появились предупреждения «содержит плейсхолдер и пропущена», значит какая-то константа осталась заглушкой.
+5. Все константы `DYSEO_PUBLISHER_*` заданы с реальными значениями, без плейсхолдеров. Проверить через `debug.log` после первого рендера записи — если там появились предупреждения «содержит плейсхолдер и пропущена», значит какая-то константа осталась заглушкой.
 
 ## Проверка дат и разметки через WP-CLI
 
@@ -207,13 +219,13 @@ printf("Thumb:     %s\n", get_post_thumbnail_id($p) ?: "нет");
 
 ### 0.4.0 — черновик
 
-- Обезличены имена классов, констант и URL.
-- Константа `SITENAME_SEO_TEST_POST_ID` всегда определена, по умолчанию `0`.
+- Префикс заменён на личный `DYSEO_` / `Dyseo_SEO`.
+- `ImageObject` в JSON-LD содержит и `url`, и `contentUrl` — закрывает требования Google и Яндекса одновременно.
+- Константа `DYSEO_SEO_TEST_POST_ID` всегда определена, по умолчанию `0`.
 - Введён метод `get_test_post_id()` для обхода ложного срабатывания PHPStan.
-- В JSON-LD `ImageObject` использует `contentUrl` вместо `url` — снимает ошибку валидатора Яндекса.
 - Добавлены docblock для класса, свойств, методов — проходит WordPress-Coding-Standards.
 - **Исправлено:** фильтр `td_option` проверяет `should_output()` — schema темы отключается только там, где плагин выводит свою разметку.
-- **Добавлено:** опциональные константы `SITENAME_PUBLISHER_ADDRESS`, `SITENAME_PUBLISHER_PHONE`, `SITENAME_PUBLISHER_LOGO_URL`, `SITENAME_PUBLISHER_LOGO_WIDTH`, `SITENAME_PUBLISHER_LOGO_HEIGHT`.
+- **Добавлено:** опциональные константы `DYSEO_PUBLISHER_ADDRESS`, `DYSEO_PUBLISHER_PHONE`, `DYSEO_PUBLISHER_LOGO_URL`, `DYSEO_PUBLISHER_LOGO_WIDTH`, `DYSEO_PUBLISHER_LOGO_HEIGHT`.
 - **Добавлено:** метод `get_safe_constant()` с защитой от утечки плейсхолдеров в боевую разметку.
 - **Добавлено:** fallback логотипа на иконку сайта (`site_icon`).
 - Лицензия MIT.
