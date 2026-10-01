@@ -1,0 +1,29 @@
+# Composer
+/vendor/
+composer.phar
+/auth.json
+
+# PHP-CS-Fixer
+/.php-cs-fixer.cache
+/.php-cs-fixer.php
+
+# PHPUnit
+/.phpunit.result.cache
+/phpunit.xml
+
+# Node (если появится)
+/node_modules/
+package-lock.json
+
+# IDE
+/.idea/
+/.vscode/
+*.sublime-*
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

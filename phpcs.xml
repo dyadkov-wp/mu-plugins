@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<ruleset name="Sitename MU Plugins">
+    <description>Стандарты кодирования для mu-plugins новостного сайта на WordPress.</description>
+
+    <!-- Что проверяем -->
+    <file>.</file>
+
+    <!-- Исключаем vendor и node_modules из проверки. -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <!-- Базовый стандарт: WordPress. -->
+    <rule ref="WordPress">
+        <!--
+            Отключаем проверки, которые не подходят для mu-plugins:
+            - имя файла не обязано совпадать с именем класса;
+            - файлы mu-plugins часто называются с дефисами.
+        -->
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+
+        <!--
+            Отключаем требование @category и @link в шапке файла:
+            это устаревшие теги PHPDoc, WordPress их не требует.
+        -->
+        <exclude name="Squiz.Commenting.FileComment.MissingCategoryTag"/>
+        <exclude name="Squiz.Commenting.FileComment.MissingLinkTag"/>
+
+        <!--
+            Отключаем требование @author в шапке файла:
+            автор указан в заголовке плагина (Author: ...), дублировать не нужно.
+        -->
+        <exclude name="Squiz.Commenting.FileComment.MissingAuthorTag"/>
+    </rule>
+
+    <!-- Минимальная версия PHP: 7.4 и выше. -->
+    <config name="testVersion" value="7.4-"/>
+
+    <!--
+        Проверяем, что все глобальные сущности имеют правильный префикс.
+        Это защищает от коллизий с другими плагинами и темой.
+    -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="sitename"/>
+                <element value="SITENAME"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!--
+        Длина строки: предупреждение при 120 символах, жёсткого лимита нет.
+        Стандарт WordPress по умолчанию — 100, но для JSON-LD и метатегов
+        это слишком строго.
+    -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120"/>
+            <property name="absoluteLineLimit" value="0"/>
+        </properties>
+    </rule>
+</ruleset>
