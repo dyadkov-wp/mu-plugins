@@ -433,13 +433,14 @@ class Dyseo_SEO {
 
 		$logo = $this->get_publisher_logo();
 		if ( ! empty( $logo ) ) {
-			$publisher['logo'] = array(
+			$publisher['logo']  = array(
 				'@type'      => 'ImageObject',
 				'url'        => $logo['url'],
 				'contentUrl' => $logo['url'],
 				'width'      => $logo['width'],
 				'height'     => $logo['height'],
 			);
+			$publisher['image'] = $logo['url'];
 		}
 
 		$address = $this->get_safe_constant( 'DYSEO_PUBLISHER_ADDRESS' );
