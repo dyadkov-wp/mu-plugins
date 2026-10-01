@@ -51,30 +51,6 @@ if ( ! defined( 'SITENAME_SEO_TEST_POST_ID' ) ) {
 class Sitename_SEO {
 
 	/**
-	 * URL логотипа издателя.
-	 *
-	 * @since 0.4.0
-	 * @var string
-	 */
-	private $publisher_logo_url = 'https://example.com/wp-content/uploads/publisher-logo.png';
-
-	/**
-	 * Ширина логотипа издателя в пикселях.
-	 *
-	 * @since 0.4.0
-	 * @var int
-	 */
-	private $publisher_logo_width = 512;
-
-	/**
-	 * Высота логотипа издателя в пикселях.
-	 *
-	 * @since 0.4.0
-	 * @var int
-	 */
-	private $publisher_logo_height = 512;
-
-	/**
 	 * Регистрирует хуки WordPress.
 	 *
 	 * @since 0.4.0
@@ -191,7 +167,7 @@ class Sitename_SEO {
 			'og:locale'      => $locale,
 		);
 
-		if ( $image ) {
+		if ( ! empty( $image ) ) {
 			$tags['og:image'] = $image['url'];
 			// Указываем размеры только если они реально известны.
 			if ( ! empty( $image['width'] ) && ! empty( $image['height'] ) ) {
@@ -242,7 +218,7 @@ class Sitename_SEO {
 			'twitter:description' => $description,
 		);
 
-		if ( $image ) {
+		if ( ! empty( $image ) ) {
 			$tags['twitter:image'] = $image['url'];
 		}
 
@@ -286,20 +262,10 @@ class Sitename_SEO {
 				'name'  => get_the_author_meta( 'display_name', $post->post_author ),
 				'url'   => get_author_posts_url( $post->post_author ),
 			),
-			'publisher'        => array(
-				'@type' => 'Organization',
-				'name'  => get_bloginfo( 'name' ),
-				'url'   => home_url( '/' ),
-				'logo'  => array(
-					'@type'      => 'ImageObject',
-					'contentUrl' => $this->publisher_logo_url,
-					'width'      => $this->publisher_logo_width,
-					'height'     => $this->publisher_logo_height,
-				),
-			),
+			'publisher'        => $this->get_publisher_schema(),
 		);
 
-		if ( $image ) {
+		if ( ! empty( $image ) ) {
 			$schema['image'] = array(
 				'@type'      => 'ImageObject',
 				'contentUrl' => $image['url'],
@@ -316,6 +282,154 @@ class Sitename_SEO {
 	// =========================================================================
 	// ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
 	// =========================================================================
+
+	/**
+	 * Безопасно читает строковую константу.
+	 *
+	 * Возвращает $fallback, если:
+	 *   - константа не определена;
+	 *   - значение пустое после trim();
+	 *   - значение содержит очевидный плейсхолдер (example, test и т.п.).
+	 *
+	 * Это защита от случайной отправки заглушек на боевой сайт.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @param string $name     Имя константы.
+	 * @param string $fallback Значение по умолчанию.
+	 * @return string Очищенное значение или $fallback.
+	 */
+	private function get_safe_constant( $name, $fallback = '' ) {
+		if ( ! defined( $name ) ) {
+			return $fallback;
+		}
+
+		$value = trim( (string) constant( $name ) );
+
+		if ( '' === $value ) {
+			return $fallback;
+		}
+
+		// Очевидные маркеры плейсхолдеров — отсеиваем.
+		$placeholders = array(
+			'example',
+			'test',
+			'placeholder',
+			'sample',
+			'xxx',
+			'заглушка',
+			'плейсхолдер',
+		);
+
+		$lower = mb_strtolower( $value, 'UTF-8' );
+
+		foreach ( $placeholders as $needle ) {
+			if ( false !== mb_strpos( $lower, $needle, 0, 'UTF-8' ) ) {
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Логируется только при WP_DEBUG, для отладки конфигурации.
+					error_log(
+						sprintf(
+							'Sitename SEO: константа %s содержит плейсхолдер и пропущена.',
+							$name
+						)
+					);
+				}
+				return $fallback;
+			}
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Возвращает данные логотипа издателя.
+	 *
+	 * Источники (по приоритету):
+	 *   1. Константа SITENAME_PUBLISHER_LOGO_URL + размеры из констант
+	 *      SITENAME_PUBLISHER_LOGO_WIDTH / HEIGHT (по умолчанию 512×512).
+	 *   2. Иконка сайта из настроек WordPress (site_icon).
+	 *   3. Пустой массив — логотип не выводится.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return array{url:string,width:int,height:int}|array{}
+	 */
+	private function get_publisher_logo() {
+		$url = $this->get_safe_constant( 'SITENAME_PUBLISHER_LOGO_URL' );
+
+		if ( '' !== $url ) {
+			return array(
+				'url'    => $url,
+				'width'  => (int) $this->get_safe_constant( 'SITENAME_PUBLISHER_LOGO_WIDTH', '512' ),
+				'height' => (int) $this->get_safe_constant( 'SITENAME_PUBLISHER_LOGO_HEIGHT', '512' ),
+			);
+		}
+
+		// Fallback: иконка сайта из настроек WordPress.
+		$site_icon_id = (int) get_option( 'site_icon' );
+		if ( $site_icon_id > 0 ) {
+			$icon = wp_get_attachment_image_src( $site_icon_id, 'full' );
+			if ( $icon && ! empty( $icon[0] ) ) {
+				return array(
+					'url'    => $icon[0],
+					'width'  => (int) $icon[1],
+					'height' => (int) $icon[2],
+				);
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Собирает схему Organization для издателя.
+	 *
+	 * Поля address и telephone добавляются, только если соответствующие
+	 * константы заданы в wp-config.php и не содержат плейсхолдеров.
+	 *
+	 * Константы:
+	 *   - SITENAME_PUBLISHER_ADDRESS     — полный адрес организации.
+	 *   - SITENAME_PUBLISHER_PHONE       — телефон в формате +7 (XXX) XXX-XX-XX.
+	 *   - SITENAME_PUBLISHER_LOGO_URL    — URL логотипа.
+	 *   - SITENAME_PUBLISHER_LOGO_WIDTH  — ширина логотипа в пикселях.
+	 *   - SITENAME_PUBLISHER_LOGO_HEIGHT — высота логотипа в пикселях.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return array Схема Organization.
+	 */
+	private function get_publisher_schema() {
+		$publisher = array(
+			'@type' => 'Organization',
+			'name'  => get_bloginfo( 'name' ),
+			'url'   => home_url( '/' ),
+		);
+
+		$logo = $this->get_publisher_logo();
+		if ( ! empty( $logo ) ) {
+			$publisher['logo'] = array(
+				'@type'      => 'ImageObject',
+				'contentUrl' => $logo['url'],
+				'width'      => $logo['width'],
+				'height'     => $logo['height'],
+			);
+		}
+
+		$address = $this->get_safe_constant( 'SITENAME_PUBLISHER_ADDRESS' );
+		if ( '' !== $address ) {
+			$publisher['address'] = array(
+				'@type'         => 'PostalAddress',
+				'streetAddress' => $address,
+			);
+		}
+
+		$phone = $this->get_safe_constant( 'SITENAME_PUBLISHER_PHONE' );
+		if ( '' !== $phone ) {
+			$publisher['telephone'] = $phone;
+		}
+
+		return $publisher;
+	}
 
 	/**
 	 * Описание: excerpt или первый абзац контента (макс. 160 символов).
@@ -361,7 +475,7 @@ class Sitename_SEO {
 	 *
 	 * @since 0.4.0
 	 *
-	 * @return array{url:string,width?:int,height?:int}
+	 * @return array{url:string,width?:int,height?:int}|array{}
 	 */
 	private function get_og_image() {
 		global $post;
@@ -387,11 +501,16 @@ class Sitename_SEO {
 		}
 
 		// 3. Fallback — логотип издателя.
-		return array(
-			'url'    => $this->publisher_logo_url,
-			'width'  => $this->publisher_logo_width,
-			'height' => $this->publisher_logo_height,
-		);
+		$logo = $this->get_publisher_logo();
+		if ( ! empty( $logo ) ) {
+			return array(
+				'url'    => $logo['url'],
+				'width'  => $logo['width'],
+				'height' => $logo['height'],
+			);
+		}
+
+		return array();
 	}
 
 	/**
