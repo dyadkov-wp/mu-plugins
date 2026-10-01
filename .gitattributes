@@ -1,7 +1,9 @@
-# Нормализация переносов строк: всегда LF в репозитории.
+# =============================================================================
+# Нормализация переносов строк.
+# =============================================================================
+
 * text=auto eol=lf
 
-# Явно для текстовых файлов.
 *.php  text eol=lf
 *.md   text eol=lf
 *.json text eol=lf
@@ -27,3 +29,29 @@
 *.woff2 binary
 *.ttf binary
 *.eot binary
+
+# =============================================================================
+# Исключения из релизного архива (git archive).
+# Эти файлы остаются в репозитории, но не попадают в ZIP для сервера.
+# =============================================================================
+
+# Git и GitHub.
+/.gitattributes    export-ignore
+/.gitignore        export-ignore
+/.github/          export-ignore
+
+# Редактор.
+/.editorconfig     export-ignore
+
+# Composer (dev-зависимости).
+/vendor/           export-ignore
+/composer.json     export-ignore
+/composer.lock     export-ignore
+
+# Инструменты статического анализа.
+/phpcs.xml         export-ignore
+/phpstan.neon      export-ignore
+
+# Документация репозитория.
+/README.md         export-ignore
+/LICENSE           export-ignore
